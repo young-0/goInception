@@ -1648,7 +1648,12 @@ func (s *session) executeRemoteStatementAndBackup(record *Record) {
 func (s *session) mysqlFetchMasterBinlogPosition() *MasterStatus {
 	log.Debug("mysqlFetchMasterBinlogPosition")
 
+	// MySQL 8.4.0+ removes SHOW MASTER STATUS; use SHOW BINARY LOG STATUS (same columns).
+	// MariaDB/TiDB 等仍走原语句。dbVersion 由 mysqlServerVersion() 解析，如 8.4.8 -> 80408。
 	sql := "SHOW MASTER STATUS;"
+	if s.dbType == DBTypeMysql && s.dbVersion >= 80400 {
+		sql = "SHOW BINARY LOG STATUS;"
+	}
 	if s.isMiddleware() {
 		sql = s.opt.middlewareExtend + sql
 	}
