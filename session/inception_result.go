@@ -105,7 +105,6 @@ type Record struct {
 func (r *Record) appendWarningMessage(msg string) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), int(1)))
 
-	r.Buf.WriteString("[warn] ")
 	r.Buf.WriteString(msg)
 	if !strings.HasSuffix(msg, ".") && !strings.HasSuffix(msg, "!") {
 		r.Buf.WriteString(".")
@@ -116,7 +115,6 @@ func (r *Record) appendWarningMessage(msg string) {
 func (r *Record) appendErrorMessage(msg string) {
 	r.ErrLevel = 2
 
-	r.Buf.WriteString("[error] ")
 	r.Buf.WriteString(msg)
 	if !strings.HasSuffix(msg, ".") && !strings.HasSuffix(msg, "!") {
 		r.Buf.WriteString(".")
@@ -126,14 +124,6 @@ func (r *Record) appendErrorMessage(msg string) {
 
 func (r *Record) appendErrorNo(lang string, number ErrorCode, values ...interface{}) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), int(GetErrorLevel(number))))
-
-	// 根据该条规则自身的级别添加前缀
-	level := GetErrorLevel(number)
-	if level == 1 {
-		r.Buf.WriteString("[warn] ")
-	} else if level == 2 {
-		r.Buf.WriteString("[error] ")
-	}
 
 	if len(values) == 0 {
 		r.Buf.WriteString(GetErrorMessage(number, lang))
@@ -147,7 +137,6 @@ func (r *Record) appendErrorNo(lang string, number ErrorCode, values ...interfac
 func (r *Record) appendWarning(lang string, number ErrorCode, values ...interface{}) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), 1))
 
-	r.Buf.WriteString("[warn] ")
 	if len(values) == 0 {
 		r.Buf.WriteString(GetErrorMessage(number, lang))
 	} else {
