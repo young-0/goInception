@@ -371,15 +371,39 @@ func (s *MyRecordSets) setFields(r *Record) {
 	row[2].SetInt64(int64(r.ErrLevel))
 	row[3].SetString(StatusList[r.StageStatus])
 
+	// 获取 ErrorMessage
+	var errMsg string
 	if r.ErrorMessage != "" {
-		row[4].SetString(r.ErrorMessage)
-	} else {
-		e := strings.TrimSpace(r.Buf.String())
-		if e == "" {
-			row[4].SetNull()
-		} else {
-			row[4].SetString(e)
+		errMsg = r.ErrorMessage
+	} else if r.Buf != nil {
+		errMsg = strings.TrimSpace(r.Buf.String())
+	}
+
+	// 为每行审核信息添加级别前缀 [warn] 或 [error]
+	if errMsg != "" && r.ErrLevel > 0 {
+		var prefix string
+		if r.ErrLevel == 1 {
+			prefix = "[warn]"
+		} else if r.ErrLevel == 2 {
+			prefix = "[error]"
 		}
+		if prefix != "" {
+			lines := strings.Split(errMsg, "\n")
+			for i, line := range lines {
+				trimmed := strings.TrimSpace(line)
+				if trimmed != "" {
+					lines[i] = prefix + " " + trimmed
+				}
+			}
+			errMsg = strings.Join(lines, "\n")
+		}
+		log.Debugf("setFields: SeqNo=%d ErrLevel=%d ErrorMessage=%s", r.SeqNo, r.ErrLevel, errMsg)
+	}
+
+	if errMsg == "" {
+		row[4].SetNull()
+	} else {
+		row[4].SetString(errMsg)
 	}
 
 	row[5].SetString(r.Sql)
