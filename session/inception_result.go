@@ -105,6 +105,7 @@ type Record struct {
 func (r *Record) appendWarningMessage(msg string) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), int(1)))
 
+	r.Buf.WriteString("[warn] ")
 	r.Buf.WriteString(msg)
 	if !strings.HasSuffix(msg, ".") && !strings.HasSuffix(msg, "!") {
 		r.Buf.WriteString(".")
@@ -115,6 +116,7 @@ func (r *Record) appendWarningMessage(msg string) {
 func (r *Record) appendErrorMessage(msg string) {
 	r.ErrLevel = 2
 
+	r.Buf.WriteString("[error] ")
 	r.Buf.WriteString(msg)
 	if !strings.HasSuffix(msg, ".") && !strings.HasSuffix(msg, "!") {
 		r.Buf.WriteString(".")
@@ -124,6 +126,14 @@ func (r *Record) appendErrorMessage(msg string) {
 
 func (r *Record) appendErrorNo(lang string, number ErrorCode, values ...interface{}) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), int(GetErrorLevel(number))))
+
+	// 根据该条规则自身的级别添加前缀
+	level := GetErrorLevel(number)
+	if level == 1 {
+		r.Buf.WriteString("[warn] ")
+	} else if level == 2 {
+		r.Buf.WriteString("[error] ")
+	}
 
 	if len(values) == 0 {
 		r.Buf.WriteString(GetErrorMessage(number, lang))
@@ -137,6 +147,7 @@ func (r *Record) appendErrorNo(lang string, number ErrorCode, values ...interfac
 func (r *Record) appendWarning(lang string, number ErrorCode, values ...interface{}) {
 	r.ErrLevel = uint8(Max(int(r.ErrLevel), 1))
 
+	r.Buf.WriteString("[warn] ")
 	if len(values) == 0 {
 		r.Buf.WriteString(GetErrorMessage(number, lang))
 	} else {
@@ -149,27 +160,6 @@ func (r *Record) appendWarning(lang string, number ErrorCode, values ...interfac
 func (r *Record) cut() {
 	if r.ErrorMessage == "" {
 		r.ErrorMessage = strings.TrimSpace(r.Buf.String())
-	}
-
-	// 为每行审核信息添加级别前缀 [warn] 或 [error]
-	if r.ErrorMessage != "" && r.ErrLevel > 0 {
-		var prefix string
-		if r.ErrLevel == 1 {
-			prefix = "[warn]"
-		} else if r.ErrLevel == 2 {
-			prefix = "[error]"
-		}
-		if prefix != "" {
-			lines := strings.Split(r.ErrorMessage, "\n")
-			for i, line := range lines {
-				trimmed := strings.TrimSpace(line)
-				if trimmed != "" {
-					lines[i] = prefix + " " + trimmed
-				}
-			}
-			r.ErrorMessage = strings.Join(lines, "\n")
-		}
-		log.Debugf("cut: SeqNo=%d ErrLevel=%d ErrorMessage=%s", r.SeqNo, r.ErrLevel, r.ErrorMessage)
 	}
 
 	r.Buf = nil
@@ -379,24 +369,7 @@ func (s *MyRecordSets) setFields(r *Record) {
 		errMsg = strings.TrimSpace(r.Buf.String())
 	}
 
-	// 为每行审核信息添加级别前缀 [warn] 或 [error]
-	if errMsg != "" && r.ErrLevel > 0 {
-		var prefix string
-		if r.ErrLevel == 1 {
-			prefix = "[warn]"
-		} else if r.ErrLevel == 2 {
-			prefix = "[error]"
-		}
-		if prefix != "" {
-			lines := strings.Split(errMsg, "\n")
-			for i, line := range lines {
-				trimmed := strings.TrimSpace(line)
-				if trimmed != "" {
-					lines[i] = prefix + " " + trimmed
-				}
-			}
-			errMsg = strings.Join(lines, "\n")
-		}
+	if errMsg != "" {
 		log.Debugf("setFields: SeqNo=%d ErrLevel=%d ErrorMessage=%s", r.SeqNo, r.ErrLevel, errMsg)
 	}
 
