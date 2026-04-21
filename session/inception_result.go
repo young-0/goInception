@@ -150,6 +150,27 @@ func (r *Record) cut() {
 	if r.ErrorMessage == "" {
 		r.ErrorMessage = strings.TrimSpace(r.Buf.String())
 	}
+
+	// 为每行审核信息添加级别前缀 [warn] 或 [error]
+	if r.ErrorMessage != "" && r.ErrLevel > 0 {
+		var prefix string
+		if r.ErrLevel == 1 {
+			prefix = "[warn]"
+		} else if r.ErrLevel == 2 {
+			prefix = "[error]"
+		}
+		if prefix != "" {
+			lines := strings.Split(r.ErrorMessage, "\n")
+			for i, line := range lines {
+				trimmed := strings.TrimSpace(line)
+				if trimmed != "" {
+					lines[i] = prefix + " " + trimmed
+				}
+			}
+			r.ErrorMessage = strings.Join(lines, "\n")
+		}
+	}
+
 	r.Buf = nil
 	r.Type = nil
 	r.TableInfo = nil
