@@ -26,7 +26,7 @@ import (
 	"github.com/hanchuanchuan/goInception/util/chunk"
 	"github.com/hanchuanchuan/goInception/util/sqlexec"
 
-	// log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -169,6 +169,7 @@ func (r *Record) cut() {
 			}
 			r.ErrorMessage = strings.Join(lines, "\n")
 		}
+		log.Debugf("cut: SeqNo=%d ErrLevel=%d ErrorMessage=%s", r.SeqNo, r.ErrLevel, r.ErrorMessage)
 	}
 
 	r.Buf = nil
